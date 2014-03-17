@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+#Script para testar automaticamente os labs do susy da unicamp.Primeiro argumento e o arquivo executavel,segundo argumento e o endereco de testes.html (eg susy.ic.unicamp.br:9999/mc102qrst/01b/dados/testes.html)
+
+import sys
+import urllib2
+import string
+import pexpect
+
+
+
+ #funcao que pega os testes da internet
+def fetchtests(urlpath):
+    urltests = urlpath[0:string.rfind(urlpath,"/")+1]#tira o "testes.html" no final da url
+    tests = []
+    i = 1
+    while True:
+        testname = "arq" + ("0" + str(i))[-2:] #permite que o nome do arquivo seja arq01,e nao arq1
+        test = {}
+        try:
+            input = urllib2.urlopen(urltests + testname + ".in")
+            output = urllib2.urlopen(urltests + testname + ".res")
+        except:
+            print '\033[91m' +  "nao foi possivel fazer o download dos testes,verifique a url fornecida" + '\033[0m'
+            exit()
+
+        if input.info().gettype() == "text/html":
+            break
+
+        test["input"] = input.read()
+        test["output"] = output.read()
+        tests.append(test)
+        i += 1
+    return tests
+
+
+#funcao que realiza os testes
+def runtest(test,executable):
+    instance = pexpect.spawn(executable)
+    instance.write(test["input"])
+    response = instance.read()
+    response = sanitize(response,test["input"])
+    if response.endswith(test["output"]):
+        print '\033[94m' + "teste foi executado com sucesso" + '\033[0m'
+    else:
+        print "A saida nao foi igual a esperada \n"
+        printdif(response,test["output"])
+
+#funcao que imprime a diferenca de duas strings
+def printdif(saida,esperada):
+    print "entrada e saida:\n"
+    print '\033[93m' + saida + '\033[0m'
+    print "saida esperada:\n"
+    print '\033[94m' + esperada + '\033[0m'
+
+#funcao que sanitiza o output
+def sanitize(string,input):
+    string = string.replace("\r","")
+    return string
+
+
+urlpath = sys.argv[2]
+executable = sys.argv[1]
+tests = fetchtests(urlpath)
+for test in tests:
+    runtest(test,executable)
+
+print "Todos testes foram executados"
