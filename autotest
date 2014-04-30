@@ -4,6 +4,7 @@
 
 import sys
 import urllib2
+import os
 import string
 import pexpect
 
@@ -36,7 +37,7 @@ def fetchtests(urlpath):
 
 #funcao que realiza os testes
 def runtest(test,executable):
-    instance = pexpect.spawn(executable)
+    instance = pexpect.spawn(os.getcwd() + '/' + executable)
     instance.write(test["input"])
     response = instance.read()
     response = sanitize(response,test["input"])
